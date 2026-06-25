@@ -98,6 +98,24 @@
   .presence .av:first-child{margin-left:0}
   .presence .more{background:#8595a8}
   @media(max-width:680px){.presence .lbl span{display:none} .presence{padding:4px 8px}}
+  .page-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
+  .asof{text-align:right;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;line-height:1.5;border:1px solid var(--line);border-radius:8px;padding:6px 12px;background:#fff;white-space:nowrap}
+  .asof b{font-size:14px;color:var(--navy);text-transform:none;letter-spacing:0}
+  .legend{background:#eef3fa;border:1px solid #d4e0f0;border-radius:8px;padding:10px 14px;margin:6px 0 14px;font-size:12px;color:#33485f;display:flex;flex-direction:column;gap:4px}
+  .legend>b{color:var(--navy);margin-bottom:2px}
+  .legend b{color:var(--navy)}
+  .scenbar{display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+  .scenbar .lbl{font-size:12px;font-weight:700;color:var(--muted)}
+  .scenbar .scnote{font-size:11px;color:var(--muted)}
+  table.wide th,table.wide td{white-space:nowrap}
+  .stick{position:sticky;left:0;background:#fff;z-index:2;box-shadow:1px 0 0 var(--line);min-width:180px}
+  thead .stick{background:var(--navy);z-index:3}
+  tr:hover .stick{background:#fafcfe}
+  .totrow{font-weight:800;background:#f1f5f9}
+  .totrow .stick{background:#f1f5f9}
+  tr.totrow:hover .stick{background:#f1f5f9}
+  .cin{width:62px;text-align:right;padding:5px 6px;font-size:12px}
+  .sub2{font-size:11px;color:var(--muted);font-weight:400;white-space:normal}
   .loader{position:fixed;inset:0;background:rgba(15,42,67,.6);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;z-index:999}
 </style>
 </head>
@@ -143,18 +161,28 @@ const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFz
 const EMAIL_DOMAIN  = 'es-tracker.app';
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
-/* ---------- DIVISIONS + targets (from 26-27 Target.xlsx) ---------- */
+/* ---------- DIVISIONS + targets (from EIPL Budget FY26-27, ASSUMPTIONS) ----------
+   All ₹ Cr, EXCLUDING GST (basic value). bull/base/bear = scenario revenue
+   (billing) targets; openOB = opening order book (rollover on 1-Apr-26);
+   obT = order booking target; b2b = booking-to-billing ratio; fresh = fresh
+   billing target; wc = working capital requirement. ------------------------- */
 const DIVISIONS = [
- {id:'div1',name:'Government Tender Business',owners:'Satyakirti Patil (SVP), AS, GD, JT',obT:450,billDone:27.92,billT:301.74},
- {id:'div2',name:'EOR Projects',owners:'SJS, RC, JKS',obT:20,billDone:4.76,billT:27.35},
- {id:'div3',name:'E&I Projects (EPC)',owners:'Maulik Jani (MUJ), Jagdish K Sadhu (JKS)',obT:90,billDone:4.50,billT:101.14},
- {id:'div4',name:'Filteration Division',owners:'Sanjay Mashru (SVM), C P Dixit (CPD)',obT:10,billDone:1.00,billT:7.07},
- {id:'div5',name:'F&B & Pharma Machinery',owners:'Tejas Karia (TRK), DB',obT:20,billDone:5.35,billT:14.05},
- {id:'div6',name:'Civil & SIKA Chemicals',owners:'Tushar (THK), Chirag Shah (CS)',obT:22,billDone:7.30,billT:16.24},
- {id:'div7',name:'HVAC Division',owners:'Harshil Rawal (HUR), Upen Rawal, MES',obT:25,billDone:8.99,billT:35.82},
- {id:'div8',name:'ChemSource',owners:'CCK, S (owner TBD)',obT:10,billDone:3.98,billT:8.00},
- {id:'div9',name:'Commodity Trading',owners:'SBB, KK',obT:30,billDone:20.82,billT:30.00},
+ {id:'div1',name:'Government Tender Business',owners:'Satyakirti Patil (SVP), AS, GD, JT',cat:'Non-Group',bull:301.74,base:212.5,bear:150.87,openOB:76.74,obT:450,b2b:0.5,fresh:225,wc:53.13},
+ {id:'div2',name:'EOR Projects',owners:'SJS, RC, JKS',cat:'Non-Group',bull:27.35,base:20,bear:13.68,openOB:15.35,obT:20,b2b:0.6,fresh:12,wc:5},
+ {id:'div3',name:'E&I Projects (EPC)',owners:'Maulik Jani (MUJ), Jagdish K Sadhu (JKS)',cat:'Non-Group',bull:101.14,base:80,bear:50.57,openOB:47.14,obT:90,b2b:0.6,fresh:54,wc:20},
+ {id:'div4',name:'Filtration Division',owners:'Sanjay Mashru (SVM), C P Dixit (CPD)',cat:'Non-Group',bull:7.07,base:5.5,bear:3.54,openOB:0.07,obT:10,b2b:0.7,fresh:7,wc:1.38},
+ {id:'div5',name:'F&B and Pharma Machinery',owners:'Tejas Karia (TRK), DB',cat:'Non-Group',bull:14.05,base:11,bear:7.03,openOB:2.05,obT:20,b2b:0.6,fresh:12,wc:2.75},
+ {id:'div6',name:'Civil Projects & SIKA Chemicals',owners:'Tushar (THK), Chirag Shah (CS)',cat:'Non-Group',bull:16.24,base:12,bear:8.12,openOB:0.84,obT:22,b2b:0.7,fresh:15.4,wc:3},
+ {id:'div7',name:'HVAC Division',owners:'Harshil Rawal (HUR), Upen Rawal, MES',cat:'Non-Group',bull:35.82,base:28,bear:17.91,openOB:20.82,obT:25,b2b:0.6,fresh:15,wc:7},
+ {id:'div8',name:'ChemSource Global',owners:'CCK, S (owner TBD)',cat:'Non-Group',bull:9.6,base:8,bear:4.8,openOB:0,obT:12,b2b:0.8,fresh:9.6,wc:2},
+ {id:'div9',name:'Commodity Trading (Import/Export)',owners:'SBB, KK',cat:'Non-Group',bull:30,base:23,bear:15,openOB:0,obT:30,b2b:1,fresh:30,wc:5.75},
+ {id:'div10',name:'Group Exports',owners:'SBB',cat:'Group',bull:600,base:575,bear:550,openOB:250,obT:0,b2b:0,fresh:null,wc:143.75},
 ];
+/* months of FY26-27 for monthly billing actuals */
+const MONTHS=[['m_apr','Apr-26'],['m_may','May-26'],['m_jun','Jun-26'],['m_jul','Jul-26'],['m_aug','Aug-26'],['m_sep','Sep-26'],['m_oct','Oct-26'],['m_nov','Nov-26'],['m_dec','Dec-26'],['m_jan','Jan-27'],['m_feb','Feb-27'],['m_mar','Mar-27']];
+let SCENARIO='base';                          // bull | base | bear (active scenario)
+const targetOf=d=>d[SCENARIO];                // active billing target for a division
+const billYTDof=w=>w?MONTHS.reduce((s,[k])=>s+(+w[k]||0),0):0;  // YTD billing = sum of months
 
 /* ---------- STATE + helpers ---------- */
 let SESSION=null, TAB='dash', FU=[], WK={}, PR=[], fuFilter='all';
@@ -163,7 +191,10 @@ const today=()=>new Date().toISOString().slice(0,10);
 const esc=s=>(s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const num=n=>(n===''||n==null||isNaN(n))?'–':Number(n).toFixed(2);
 const divName=id=>{const d=DIVISIONS.find(x=>x.id===id);return d?d.name:id;};
-const myDivs=()=>SESSION.role==='mgmt'?DIVISIONS:DIVISIONS.filter(d=>d.id===SESSION.divId);
+const myDivs=()=>(SESSION.role==='mgmt'||SESSION.role==='finance')?DIVISIONS:DIVISIONS.filter(d=>d.id===SESSION.divId);
+function scLabel(){return SCENARIO.charAt(0).toUpperCase()+SCENARIO.slice(1);}
+function scenarioBar(){return `<div class="scenbar"><span class="lbl">Scenario</span>${['bull','base','bear'].map(s=>`<span class="chip ${SCENARIO===s?'active':''}" onclick="setScenario('${s}')">${s.charAt(0).toUpperCase()+s.slice(1)}</span>`).join('')}<span class="scnote">Targets shown for the selected scenario (Base = active plan)</span></div>`;}
+function setScenario(s){SCENARIO=s;render();}
 const pct=(a,b)=>(!b||b<=0)?0:Math.round((a/b)*100);
 const dval=v=>v?v:null;            // empty date -> null
 const nval=v=>(v===''||v==null)?null:Number(v); // empty number -> null
@@ -186,12 +217,13 @@ async function afterAuth(){
   if(!user){loader(false);return;}
   const {data:prof}=await sb.from('profiles').select('role,div_id').eq('id',user.id).single();
   const role=prof?.role||'div', divId=prof?.div_id||null;
-  SESSION={role,divId,name:role==='mgmt'?'Management':(divName(divId)||user.email)};
+  const nm = role==='mgmt'?'Management' : role==='finance'?'Finance & Accounts' : (divName(divId)||user.email);
+  SESSION={role,divId,name:nm};
   $('login').classList.add('hidden'); $('app').classList.remove('hidden');
   $('whoName').textContent=SESSION.name;
-  $('whoRole').textContent=role==='mgmt'?'Admin':'Division';
+  $('whoRole').textContent= role==='mgmt'?'Admin' : role==='finance'?'Finance' : 'Division';
   await loadAll();
-  buildNav(); TAB=role==='mgmt'?'dash':'followup'; render();
+  buildNav(); TAB = role==='mgmt'?'dash' : role==='finance'?'turnover' : 'followup'; render();
   startPresence();
   loader(false);
 }
@@ -201,6 +233,7 @@ let presenceChannel=null, onlineUsers=[];
 const AV_COLORS=['#244890','#0e8a7d','#c0563c','#7a4fb5','#2f9e6f','#c0436b','#3f78c4','#b5862f','#4a8c5e','#5a6acf'];
 function initialsFor(){
   if(SESSION.role==='mgmt') return 'MGT';
+  if(SESSION.role==='finance') return 'FIN';
   const w=(SESSION.name||'').replace(/[^A-Za-z0-9 ]/g,' ').split(/\s+/).filter(Boolean);
   return (w.slice(0,2).map(x=>x[0]).join('')||'?').toUpperCase();
 }
@@ -238,15 +271,16 @@ async function loadAll(){
     sb.from('projects').select('*')
   ]);
   FU=(fu.data||[]).map(r=>({id:r.id,date:r.date,divId:r.div_id,person:r.person,mode:r.mode,funnel:r.funnel,collection:r.collection,exec:r.exec_status,action:r.action,owner:r.owner,followDate:r.follow_date,status:r.status}));
-  WK={}; (wk.data||[]).forEach(r=>WK[r.div_id]={obYTD:r.ob_ytd,billYTD:r.bill_ytd,weekBill:r.week_bill,weekEnding:r.week_ending});
+  WK={}; (wk.data||[]).forEach(r=>{const o={obYTD:r.ob_ytd}; MONTHS.forEach(([k])=>o[k]=r[k]); WK[r.div_id]=o;});
   PR=(pr.data||[]).map(r=>({id:r.id,divId:r.div_id,name:r.name,client:r.client,order:r.order_value,billed:r.billed,collected:r.collected,exec:r.exec_pct,man:r.manpower,ehs:r.ehs,status:r.status,remarks:r.remarks}));
 }
 
 /* ---------- NAV ---------- */
 function buildNav(){
-  const tabs=SESSION.role==='mgmt'
-    ?[['dash','Dashboard'],['followup','Daily Follow-up'],['turnover','Turnover vs Target'],['projects','Project Tracker']]
-    :[['followup','My Follow-ups'],['turnover','Turnover vs Target'],['projects','My Projects']];
+  let tabs;
+  if(SESSION.role==='mgmt') tabs=[['dash','Dashboard'],['followup','Daily Follow-up'],['turnover','Turnover vs Target'],['projects','Project Tracker']];
+  else if(SESSION.role==='finance') tabs=[['turnover','Turnover vs Target']];
+  else tabs=[['followup','My Follow-ups'],['projects','My Projects']];
   $('nav').innerHTML=tabs.map(([k,l])=>`<button data-t="${k}" class="${k===TAB?'active':''}" onclick="go('${k}')">${l}</button>`).join('');
 }
 function go(t){TAB=t;[...document.querySelectorAll('#nav button')].forEach(b=>b.classList.toggle('active',b.dataset.t===t));render();}
@@ -255,16 +289,17 @@ function render(){TAB==='dash'?renderDash():TAB==='followup'?renderFollowup():TA
 /* ---------- DASHBOARD ---------- */
 function dueState(f){ if(f.status==='Closed'||!f.followDate)return null; if(f.followDate<today())return 'over'; if(f.followDate===today())return 'today'; return null; }
 function renderDash(){
-  const totBillT=DIVISIONS.reduce((s,d)=>s+d.billT,0), totObT=DIVISIONS.reduce((s,d)=>s+d.obT,0);
-  let totBillYTD=0,totObYTD=0; DIVISIONS.forEach(d=>{const w=WK[d.id]; if(w){totBillYTD+=(+w.billYTD||0);totObYTD+=(+w.obYTD||0);}});
+  const totBillT=DIVISIONS.reduce((s,d)=>s+targetOf(d),0), totObT=DIVISIONS.reduce((s,d)=>s+d.obT,0);
+  let totBillYTD=0,totObYTD=0; DIVISIONS.forEach(d=>{const w=WK[d.id]; if(w){totBillYTD+=billYTDof(w);totObYTD+=(+w.obYTD||0);}});
   let totBilled=0,totColl=0; PR.forEach(p=>{totBilled+=(+p.billed||0);totColl+=(+p.collected||0);});
   const outstanding=totBilled-totColl;
   const over=FU.filter(f=>dueState(f)==='over').length, dueToday=FU.filter(f=>dueState(f)==='today').length;
   const ehs={Compliant:0,'Minor Gaps':0,'Non-Compliant':0,'N/A':0}; PR.forEach(p=>{if(ehs[p.ehs]!=null)ehs[p.ehs]++;});
 
-  let html=`<div class="page-title">Management Dashboard</div><div class="page-sub">FY 26-27 · big-picture view across all 9 divisions</div>
+  let html=`<div class="page-title">Management Dashboard</div><div class="page-sub">FY 26-27 · all 10 divisions · figures ₹ Cr, excl. GST</div>
+  ${scenarioBar()}
   <div class="kpis">
-    <div class="kpi"><div class="l">Total Billing Target</div><div class="v">₹${totBillT.toFixed(1)} Cr</div><div class="x">Billed YTD ₹${totBillYTD.toFixed(1)} Cr · ${pct(totBillYTD,totBillT)}%</div></div>
+    <div class="kpi"><div class="l">Billing Target (${scLabel()})</div><div class="v">₹${totBillT.toFixed(1)} Cr</div><div class="x">Billed YTD ₹${totBillYTD.toFixed(1)} Cr · ${pct(totBillYTD,totBillT)}%</div></div>
     <div class="kpi teal"><div class="l">Order Booking Target</div><div class="v">₹${totObT.toFixed(0)} Cr</div><div class="x">Booked YTD ₹${totObYTD.toFixed(1)} Cr · ${pct(totObYTD,totObT)}%</div></div>
     <div class="kpi amber"><div class="l">Outstanding (Recovery)</div><div class="v">₹${outstanding.toFixed(2)} Cr</div><div class="x">Billed ₹${totBilled.toFixed(2)} · Collected ₹${totColl.toFixed(2)}</div></div>
     <div class="kpi ${over>0?'red':'green'}"><div class="l">Follow-ups</div><div class="v">${over} <span style="font-size:14px;color:var(--muted)">overdue</span></div><div class="x">${dueToday} due today</div></div>
@@ -280,10 +315,10 @@ function renderDash(){
 
   html+=`<div class="card"><h3>Division Performance — Billing vs Target</h3><div class="tbl-wrap"><table>
     <thead><tr><th>Division</th><th class="num">Bill Target (Cr)</th><th class="num">Billed YTD</th><th>Progress</th><th class="num">Gap</th><th class="num">OB Target</th><th class="num">OB YTD</th></tr></thead><tbody>`;
-  DIVISIONS.forEach(d=>{const w=WK[d.id]||{};const by=+w.billYTD||0,oy=+w.obYTD||0,pc=pct(by,d.billT);
-    html+=`<tr><td><b>${esc(d.name)}</b></td><td class="num">${d.billT.toFixed(2)}</td><td class="num">${by.toFixed(2)}</td>
+  DIVISIONS.forEach(d=>{const w=WK[d.id]||{};const tgt=targetOf(d),by=billYTDof(w),oy=+w.obYTD||0,pc=pct(by,tgt);
+    html+=`<tr><td><b>${esc(d.name)}</b></td><td class="num">${tgt.toFixed(2)}</td><td class="num">${by.toFixed(2)}</td>
     <td><div style="display:flex;align-items:center;gap:8px"><div class="bar"><i style="width:${Math.min(pc,100)}%;background:${pc>=75?'var(--green)':pc>=40?'var(--teal)':'var(--amber)'}"></i></div><span style="font-size:12px;font-weight:700">${pc}%</span></div></td>
-    <td class="num">${(d.billT-by).toFixed(2)}</td><td class="num">${d.obT.toFixed(0)}</td><td class="num">${oy.toFixed(2)}</td></tr>`;});
+    <td class="num">${(tgt-by).toFixed(2)}</td><td class="num">${d.obT.toFixed(0)}</td><td class="num">${oy.toFixed(2)}</td></tr>`;});
   html+=`<tr style="font-weight:800;background:#f1f5f9"><td>TOTAL</td><td class="num">${totBillT.toFixed(2)}</td><td class="num">${totBillYTD.toFixed(2)}</td><td>${pct(totBillYTD,totBillT)}%</td><td class="num">${(totBillT-totBillYTD).toFixed(2)}</td><td class="num">${totObT.toFixed(0)}</td><td class="num">${totObYTD.toFixed(2)}</td></tr></tbody></table></div></div>`;
 
   html+=`<div class="grid g2">
@@ -359,33 +394,64 @@ async function addFU(){
 async function setStatus(id,v){loader(true);await sb.from('followups').update({status:v}).eq('id',id);await loadAll();loader(false);render();}
 async function delFU(id){if(!confirm('Delete this entry?'))return;loader(true);await sb.from('followups').delete().eq('id',id);await loadAll();loader(false);renderFollowup();}
 
-/* ---------- TURNOVER vs TARGET ---------- */
+/* ---------- TURNOVER vs TARGET (Finance-only edit) ---------- */
 function renderTurnover(){
-  let html=`<div class="page-title">Turnover vs Target — Weekly Update</div>
-  <div class="page-sub">Each division updates cumulative figures weekly. Targets are from the FY26-27 plan.</div>
-  <div class="note">Fill <b>Order Booking YTD</b> and <b>Billing YTD</b> (cumulative, ₹ Cr) as of the week-ending date. % &amp; gap auto-calc.</div>
-  <div class="card"><div class="tbl-wrap"><table><thead><tr><th>Division</th><th class="num">Bill Target</th><th class="num">OB Target</th><th class="num">OB YTD</th><th class="num">Billing YTD</th><th class="num">This Week Billing</th><th class="num">% Billed</th><th class="num">Gap</th><th>Week Ending</th><th></th></tr></thead><tbody>`;
-  myDivs().forEach(d=>{const w=WK[d.id]||{};
-    html+=`<tr><td><b>${esc(d.name)}</b><div style="font-size:11px;color:var(--muted)">${esc(d.owners)}</div></td>
-      <td class="num">${d.billT.toFixed(2)}</td><td class="num">${d.obT.toFixed(0)}</td>
-      <td><input type="number" step="0.01" id="ob_${d.id}" value="${w.obYTD??''}" placeholder="0" style="width:90px;text-align:right"></td>
-      <td><input type="number" step="0.01" id="by_${d.id}" value="${w.billYTD??''}" placeholder="0" style="width:90px;text-align:right"></td>
-      <td><input type="number" step="0.01" id="wk_${d.id}" value="${w.weekBill??''}" placeholder="0" style="width:90px;text-align:right"></td>
-      <td class="num" id="pc_${d.id}">${pct(+w.billYTD||0,d.billT)}%</td>
-      <td class="num" id="gp_${d.id}">${(d.billT-(+w.billYTD||0)).toFixed(2)}</td>
-      <td><input type="date" id="we_${d.id}" value="${w.weekEnding||today()}" style="width:140px"></td>
-      <td><button class="btn sm" onclick="saveWK('${d.id}',${d.billT})">Save</button></td></tr>`;});
+  const canEdit=SESSION.role==='finance';
+  const sc=scLabel();
+  const asof=new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+  let html=`<div class="page-head">
+    <div><div class="page-title">Turnover vs Target — FY 2026-27</div>
+    <div class="page-sub">${canEdit?'Update order booking & monthly billing actuals below. ':'View only — maintained by Finance & Accounts. '}All figures ₹ Cr, excluding GST.</div></div>
+    <div class="asof">View as on<br><b>${asof}</b></div></div>`;
+  html+=`<div class="legend"><b>Legend</b>
+    <span><b>OB</b> = Order Booking — new orders booked in the current FY (Apr-2026 onward)</span>
+    <span><b>YTD</b> = Year-to-Date — cumulative for the financial year so far</span>
+    <span><b>Billing YTD</b> = sum of monthly billing entered below; <b>% of ${sc}</b> = Billing YTD ÷ ${sc} billing target</span>
+    <span><b>Opening OB</b> = Opening Order Book — orders on hand at 1-Apr-2026, rolled over from FY25-26</span>
+    <span><b>Important:</b> all targets & amounts are ₹ Cr <b>EXCLUDING GST</b> (basic value only)</span></div>`;
+  html+=scenarioBar();
+  const cell=(id,val)=>canEdit?`<input type="number" step="0.01" id="${id}" value="${val??''}" placeholder="0" class="cin">`:`<span>${(val==null||val==='')?'–':(+val).toFixed(2)}</span>`;
+  const monthHdr=MONTHS.map(([k,l])=>`<th class="num">${l}</th>`).join('');
+  html+=`<div class="card"><div class="tbl-wrap"><table class="wide"><thead><tr>
+    <th class="stick">Division</th><th>Category</th>
+    <th class="num">Opening OB</th><th class="num">OB Target</th>
+    <th class="num">Bull</th><th class="num">Base</th><th class="num">Bear</th>
+    <th class="num">B2B</th><th class="num">Fresh Bill</th><th class="num">WC Req</th>
+    <th class="num" style="background:var(--teal)">OB Booked YTD</th>${monthHdr}
+    <th class="num">Billing YTD</th><th class="num">% of ${sc}</th><th class="num">Gap</th>${canEdit?'<th></th>':''}</tr></thead><tbody>`;
+  myDivs().forEach(d=>{const w=WK[d.id]||{};const tgt=targetOf(d),by=billYTDof(w),pc=pct(by,tgt);
+    html+=`<tr>
+      <td class="stick"><b>${esc(d.name)}</b><div class="sub2">${esc(d.owners)}</div></td>
+      <td>${esc(d.cat)}</td>
+      <td class="num">${d.openOB.toFixed(2)}</td><td class="num">${d.obT.toFixed(0)}</td>
+      <td class="num">${d.bull.toFixed(2)}</td><td class="num" style="font-weight:700">${d.base.toFixed(2)}</td><td class="num">${d.bear.toFixed(2)}</td>
+      <td class="num">${d.b2b?d.b2b.toFixed(2):'–'}</td><td class="num">${d.fresh==null?'N/A':d.fresh.toFixed(2)}</td><td class="num">${d.wc.toFixed(2)}</td>
+      <td class="num">${cell('ob_'+d.id,w.obYTD)}</td>
+      ${MONTHS.map(([k])=>`<td class="num">${cell(k+'_'+d.id,w[k])}</td>`).join('')}
+      <td class="num"><b>${by.toFixed(2)}</b></td>
+      <td class="num"><b style="color:${pc>=75?'var(--green)':pc>=40?'var(--navy)':'var(--amber)'}">${pc}%</b></td>
+      <td class="num">${(tgt-by).toFixed(2)}</td>
+      ${canEdit?`<td><button class="btn sm" onclick="saveWK('${d.id}')">Save</button></td>`:''}</tr>`;});
+  const sum=f=>DIVISIONS.reduce((s,d)=>s+f(d),0);
+  const tT=sum(targetOf), tBy=sum(d=>billYTDof(WK[d.id])), tOB=sum(d=>d.obT), tOpen=sum(d=>d.openOB), tWc=sum(d=>d.wc);
+  const tObY=sum(d=>+(WK[d.id]?.obYTD)||0);
+  const monthTot=MONTHS.map(([k])=>`<td class="num">${sum(d=>+(WK[d.id]?.[k])||0).toFixed(2)}</td>`).join('');
+  html+=`<tr class="totrow"><td class="stick">TOTAL</td><td></td><td class="num">${tOpen.toFixed(2)}</td><td class="num">${tOB.toFixed(0)}</td>
+    <td class="num">${sum(d=>d.bull).toFixed(2)}</td><td class="num">${sum(d=>d.base).toFixed(2)}</td><td class="num">${sum(d=>d.bear).toFixed(2)}</td>
+    <td></td><td></td><td class="num">${tWc.toFixed(2)}</td>
+    <td class="num">${tObY.toFixed(2)}</td>${monthTot}
+    <td class="num">${tBy.toFixed(2)}</td><td class="num">${pct(tBy,tT)}%</td><td class="num">${(tT-tBy).toFixed(2)}</td>${canEdit?'<td></td>':''}</tr>`;
   html+=`</tbody></table></div></div>`;
+  if(!canEdit) html+=`<div class="note">This sheet is maintained by <b>Finance &amp; Accounts</b> only. For corrections, contact the finance team.</div>`;
   $('main').innerHTML=html;
 }
-async function saveWK(id,billT){
+async function saveWK(id){
   loader(true);
-  const row={div_id:id,ob_ytd:nval($('ob_'+id).value),bill_ytd:nval($('by_'+id).value),week_bill:nval($('wk_'+id).value),week_ending:dval($('we_'+id).value),updated_by:SESSION.name,updated_at:new Date().toISOString()};
+  const row={div_id:id, ob_ytd:nval($('ob_'+id).value), updated_by:SESSION.name, updated_at:new Date().toISOString()};
+  MONTHS.forEach(([k])=>{ row[k]=nval($(k+'_'+id).value); });
   const {error}=await sb.from('weekly_updates').upsert(row,{onConflict:'div_id'});
   if(error){loader(false);alert(error.message);return;}
-  await loadAll(); loader(false);
-  $('pc_'+id).textContent=pct(+(WK[id]?.billYTD)||0,billT)+'%';
-  $('gp_'+id).textContent=(billT-(+(WK[id]?.billYTD)||0)).toFixed(2);
+  await loadAll(); loader(false); renderTurnover();
 }
 
 /* ---------- PROJECT TRACKER ---------- */
